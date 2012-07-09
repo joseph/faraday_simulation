@@ -1,14 +1,15 @@
 # FaradaySimulation
 
-A [Faraday]() extension to provide dynamic stubbing. This makes it possible 
-to simulate more of the behavior of the target service in your tests and when
-your app is running in development mode.
+A [Faraday](https://github.com/technoweenie/faraday) extension to provide 
+dynamic stubbing. This makes it much easier to simulate the behavior 
+of the target service in your tests and when your app is running in 
+development mode.
 
 
 ## Usage
 
 The `FaradaySimulation::Adapter` class is the equivalent of Faraday's own
-test adapter, but you can do a bit more with the stubs:
+test adapter, but the stubbing is more powerful:
 
     conn = Faraday::Connection.new { |builder|
       builder.use(FaradaySimulation::Adapter) { |stub|
@@ -29,8 +30,8 @@ any string, and that string will be the value of `env[:params]['foo']` in
 your stub block.
 
 For more complex routes, you can define the stub with a regular expression.
-Any regex group (you know, parenthesized pattern) in the matching regex will
-be placed in env[:segments]. For example:
+Any regex group in the matching regex will be placed in `env[:segments]`. 
+For example:
 
     stub.get(/\/foo\/([A-Z]+)\//) { |env|
       [200, {}, "Segment is #{env[:segments][0]}"]
