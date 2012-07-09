@@ -25,26 +25,72 @@ class FaradaySimulation::TestAdapter < Test::Unit::TestCase
 
 
   def test_body_params
-    @stubs.post('/post-endpoint') { |env|
+    @stubs.post('/endpoint') { |env|
       assert_equal('bar', env[:params]['foo'])
     }
-    @conn.post('/post-endpoint', 'foo=bar')
+    @conn.post('/endpoint', 'foo=bar')
   end
 
 
   def test_query_params
-    @stubs.get('/get-endpoint') { |env|
+    @stubs.get('/endpoint') { |env|
       assert_equal('garply', env[:params]['foo'])
     }
-    @conn.get('/get-endpoint?foo=garply')
+    @conn.get('/endpoint?foo=garply')
+  end
+
+
+  def test_query_params_when_defined_do_not_match
+    @stubs.get('/endpoint?foo=baz') { |env| }
+    assert_raises(Faraday::Adapter::Test::Stubs::NotFound) {
+      @conn.get('/endpoint?foo=woz')
+    }
   end
 
 
   def test_segment_params
-    @stubs.get(/\/get-endpoint\/([^\/]+)\//) { |env|
-      assert_equal('id', env[:segments][0])
+    @stubs.get(/\/endpoint\/([^\/]+)\//) { |env|
+      assert_equal('slug', env[:segments][0])
     }
-    @conn.get('/get-endpoint/id')
+    @conn.get('/endpoint/slug')
+  end
+
+
+  def test_multiple_segment_params
+    @stubs.get(/\/endpoint\/([^\/]+)\/junk\/(.*)/) { |env|
+      assert_equal('slug', env[:segments][0])
+      assert_equal('wildcard/string/', env[:segments][1])
+    }
+    @conn.get('/endpoint/slug/junk/wildcard/string/')
+  end
+
+
+  def test_segment_params_with_query_params
+    @stubs.get(/\/endpoint\/([^\/]+)\//) { |env|
+      assert_equal('bar', env[:params]['foo'])
+    }
+    @conn.get('/endpoint/slug?foo=bar')
+  end
+
+
+  def test_routed_params
+    @stubs.get('/endpoint/:slug') { |env|
+      assert_equal('faraday_simulation', env[:params]['slug'])
+    }
+    assert_nothing_raised {
+      @conn.get('/endpoint/faraday_simulation')
+    }
+  end
+
+
+  def test_routed_params_with_extension
+    @stubs.get('/endpoint/:slug.:format') { |env|
+      assert_equal('faraday_simulation', env[:params]['slug'])
+      assert_equal('json', env[:params]['format'])
+    }
+    assert_nothing_raised {
+      @conn.get('/endpoint/faraday_simulation.json')
+    }
   end
 
 end

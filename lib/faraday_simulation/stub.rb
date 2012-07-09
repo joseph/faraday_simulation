@@ -1,13 +1,14 @@
 class FaradaySimulation::Stub < Faraday::Adapter::Test::Stub
 
-  attr_accessor(:segments)
+  attr_accessor(:segments, :segment_names)
 
 
   def initialize(full, body, block)
+    self.segment_names = []
     query = nil
     if full.kind_of?(String)
       self.path, query = full.split('?')
-      self.path += '/'  unless path.match(/\/$/)
+      process_path
     else
       self.path = full
     end
@@ -15,6 +16,9 @@ class FaradaySimulation::Stub < Faraday::Adapter::Test::Stub
     self.body = body
     self.block = Proc.new { |env|
       env[:params].update(body_params(env))
+      segment_names.each { |name|
+        env[:params][name] = self.segments.shift
+      }
       env[:segments] = self.segments
       block.call(env)
     }
@@ -37,6 +41,16 @@ class FaradaySimulation::Stub < Faraday::Adapter::Test::Stub
     else
       false
     end
+  end
+
+
+  def process_path
+    self.path += '/'  unless path.match(/\/$/)
+    self.path.gsub!(/:([^\/\.]+)/) {
+      self.segment_names << $1
+      '([^\/\.]+)'
+    }
+    self.path = Regexp.new(self.path)  if segment_names.any?
   end
 
 
